@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:state_managers_app/config/providers/cat_provider.dart';
+import 'package:state_managers_app/config/providers/shopping_list_provider.dart';
+import 'package:state_managers_app/config/routes/app_routes.dart';
 import 'package:weinds/weinds.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
   @override
   Widget build(BuildContext context) {
+    final shoppinListProvider = Provider.of<ShoppingListProvider>(context);
     TextEditingController myController = TextEditingController();
     return Scaffold(
       backgroundColor: Colors.white,
@@ -46,55 +51,65 @@ class HomePage extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 10.0),
-
-                  Container(
-                    height: 184,
-                    width: MediaQuery.of(context).size.width * 0.9,
-                    alignment: Alignment.topLeft,
-                    decoration: const BoxDecoration(
-                      image: DecorationImage(
-                        image: AssetImage('assets/images/bg-card.png'),
-                        fit: BoxFit.fill,
-                      ),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Row(
-                        children: [
-                          WeinDsAssetImage(
-                            path: 'assets/images/cat-eat.png',
-                            widthImage: 180,
+                  Consumer<CatProvider>(
+                    builder: (context, value, child) {
+                      return Container(
+                        height: 184,
+                        width: MediaQuery.of(context).size.width * 0.9,
+                        alignment: Alignment.topLeft,
+                        decoration: const BoxDecoration(
+                          image: DecorationImage(
+                            image: AssetImage('assets/images/bg-card.png'),
+                            fit: BoxFit.fill,
                           ),
-                          Expanded(
-                            child: MaterialButton(
-                              minWidth: 100,
-                              height: 50,
-                              onPressed: () {},
-                              color: WeinDsColorsFoundation
-                                  .colorButtonSecondary, // Transparent background for secondary button
-                              shape: RoundedRectangleBorder(
-                                side: const BorderSide(
-                                  width: 0.5,
-                                  color: WeinDsColors.strongPrimary,
-                                ),
-                                borderRadius: BorderRadius.circular(24),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Row(
+                            children: [
+                              WeinDsAssetImage(
+                                path: value.currentImageCat,
+                                widthImage: 180,
                               ),
-                              child: SizedBox(
-                                height: 63,
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    const Text('el gato esta'),
-                                    Text('comiendo'),
-                                  ],
+                              Expanded(
+                                child: MaterialButton(
+                                  minWidth: 100,
+                                  height: 50,
+                                  onPressed: () {
+                                    Navigator.pushNamed(
+                                      context,
+                                      AppRoutes.stateCat,
+                                    );
+                                  },
+                                  color: WeinDsColorsFoundation
+                                      .colorButtonSecondary, // Transparent background for secondary button
+                                  shape: RoundedRectangleBorder(
+                                    side: const BorderSide(
+                                      width: 0.5,
+                                      color: WeinDsColors.strongPrimary,
+                                    ),
+                                    borderRadius: BorderRadius.circular(24),
+                                  ),
+                                  child: SizedBox(
+                                    height: 63,
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
+                                      children: [
+                                        const Text('el gato esta'),
+                                        Text(value.currentAction),
+                                      ],
+                                    ),
+                                  ),
                                 ),
                               ),
-                            ),
+                            ],
                           ),
-                        ],
-                      ),
-                    ),
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),
@@ -163,7 +178,9 @@ class HomePage extends StatelessWidget {
                         minWidth: 100,
                         height: 50,
                         onPressed: () {
-                          if (myController.text.isNotEmpty) {}
+                          if (myController.text.isNotEmpty) {
+                            shoppinListProvider.addItem(myController.text);
+                          }
                         },
                         color: WeinDsColorsFoundation
                             .colorButtonPrimary, // Transparent background for secondary button
@@ -184,25 +201,32 @@ class HomePage extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       SizedBox(
-                        height: 100,
-                        child: ListView.separated(
-                          itemCount: 0,
-                          itemBuilder: (context, index) {
-                            return Container(
-                              decoration: const BoxDecoration(
-                                color: WeinDsColors.scale01,
-                              ),
-                              child: ListTile(
-                                title: Text('title'),
-                                trailing: IconButton(
-                                  icon: Icon(Icons.delete),
-                                  onPressed: () {},
-                                ),
-                              ),
+                        height: 200,
+                        child: Consumer<ShoppingListProvider>(
+                          builder: (context, value, child) {
+                            return ListView.separated(
+                              itemCount: value.items.length,
+                              itemBuilder: (context, index) {
+                                return Container(
+                                  decoration: const BoxDecoration(
+                                    color: WeinDsColors.scale01,
+                                  ),
+                                  child: ListTile(
+                                    title: Text(value.items[index]),
+                                    trailing: IconButton(
+                                      icon: Icon(Icons.delete),
+                                      onPressed: () {
+                                        value.removeItem(index);
+                                      },
+                                    ),
+                                  ),
+                                );
+                              },
+                              separatorBuilder:
+                                  (BuildContext context, int index) {
+                                    return const SizedBox(height: 8);
+                                  },
                             );
-                          },
-                          separatorBuilder: (BuildContext context, int index) {
-                            return const SizedBox(height: 8);
                           },
                         ),
                       ),
