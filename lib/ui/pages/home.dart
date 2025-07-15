@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:state_managers_app/config/providers/bloc/shopping_bloc.dart';
+import 'package:state_managers_app/config/providers/cubit/cat_cubit.dart';
+import 'package:state_managers_app/config/routes/app_routes.dart';
 import 'package:weinds/weinds.dart';
 
 class HomePage extends StatelessWidget {
@@ -6,6 +10,7 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     TextEditingController myController = TextEditingController();
+    final shoppingBloc = BlocProvider.of<ShoppingBloc>(context);
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -47,54 +52,64 @@ class HomePage extends StatelessWidget {
                   ),
                   const SizedBox(height: 10.0),
 
-                  Container(
-                    height: 184,
-                    width: MediaQuery.of(context).size.width * 0.9,
-                    alignment: Alignment.topLeft,
-                    decoration: const BoxDecoration(
-                      image: DecorationImage(
-                        image: AssetImage('assets/images/bg-card.png'),
-                        fit: BoxFit.fill,
-                      ),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Row(
-                        children: [
-                          WeinDsAssetImage(
-                            path: 'assets/images/cat-eat.png',
-                            widthImage: 180,
+                  BlocBuilder<CatCubit, CatState>(
+                    builder: (context, state) {
+                      return Container(
+                        height: 184,
+                        width: MediaQuery.of(context).size.width * 0.9,
+                        alignment: Alignment.topLeft,
+                        decoration: const BoxDecoration(
+                          image: DecorationImage(
+                            image: AssetImage('assets/images/bg-card.png'),
+                            fit: BoxFit.fill,
                           ),
-                          Expanded(
-                            child: MaterialButton(
-                              minWidth: 100,
-                              height: 50,
-                              onPressed: () {},
-                              color: WeinDsColorsFoundation
-                                  .colorButtonSecondary, // Transparent background for secondary button
-                              shape: RoundedRectangleBorder(
-                                side: const BorderSide(
-                                  width: 0.5,
-                                  color: WeinDsColors.strongPrimary,
-                                ),
-                                borderRadius: BorderRadius.circular(24),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Row(
+                            children: [
+                              WeinDsAssetImage(
+                                path: state.image,
+                                widthImage: 180,
                               ),
-                              child: SizedBox(
-                                height: 63,
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    const Text('el gato esta'),
-                                    Text('comiendo'),
-                                  ],
+                              Expanded(
+                                child: MaterialButton(
+                                  minWidth: 100,
+                                  height: 50,
+                                  onPressed: () {
+                                    Navigator.of(
+                                      context,
+                                    ).pushNamed(AppRoutes.stateCat);
+                                  },
+                                  color: WeinDsColorsFoundation
+                                      .colorButtonSecondary, // Transparent background for secondary button
+                                  shape: RoundedRectangleBorder(
+                                    side: const BorderSide(
+                                      width: 0.5,
+                                      color: WeinDsColors.strongPrimary,
+                                    ),
+                                    borderRadius: BorderRadius.circular(24),
+                                  ),
+                                  child: SizedBox(
+                                    height: 63,
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
+                                      children: [
+                                        const Text('el gato esta'),
+                                        Text(state.action),
+                                      ],
+                                    ),
+                                  ),
                                 ),
                               ),
-                            ),
+                            ],
                           ),
-                        ],
-                      ),
-                    ),
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),
@@ -163,7 +178,13 @@ class HomePage extends StatelessWidget {
                         minWidth: 100,
                         height: 50,
                         onPressed: () {
-                          if (myController.text.isNotEmpty) {}
+                          if (myController.text.isNotEmpty) {
+                            shoppingBloc.add(
+                              AddItemEvent(item: myController.text),
+                            );
+                            myController
+                                .clear(); // Clear the text field after adding
+                          }
                         },
                         color: WeinDsColorsFoundation
                             .colorButtonPrimary, // Transparent background for secondary button
@@ -184,25 +205,45 @@ class HomePage extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       SizedBox(
-                        height: 100,
-                        child: ListView.separated(
-                          itemCount: 0,
-                          itemBuilder: (context, index) {
-                            return Container(
-                              decoration: const BoxDecoration(
-                                color: WeinDsColors.scale01,
-                              ),
-                              child: ListTile(
-                                title: Text('title'),
-                                trailing: IconButton(
-                                  icon: Icon(Icons.delete),
-                                  onPressed: () {},
-                                ),
-                              ),
-                            );
-                          },
-                          separatorBuilder: (BuildContext context, int index) {
-                            return const SizedBox(height: 8);
+                        height: 300,
+                        child: BlocBuilder<ShoppingBloc, ShoppingState>(
+                          bloc: BlocProvider.of<ShoppingBloc>(context),
+                          builder: (context, state) {
+                            if (state is LoadingListState) {
+                              return const CircularProgressIndicator();
+                            } else if (state is ShoppingInitial) {
+                              return Center(
+                                child: const Text('No hay items en la lista'),
+                              );
+                            } else if (state is LoadedListState) {
+                              return ListView.separated(
+                                itemCount: state.items.length,
+                                itemBuilder: (context, index) {
+                                  return Container(
+                                    decoration: const BoxDecoration(
+                                      color: WeinDsColors.scale01,
+                                    ),
+                                    child: ListTile(
+                                      title: Text(state.items[index]),
+                                      trailing: IconButton(
+                                        icon: Icon(Icons.delete),
+                                        onPressed: () {
+                                          shoppingBloc.add(
+                                            RemoveItemEvent(index: index),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  );
+                                },
+                                separatorBuilder:
+                                    (BuildContext context, int index) {
+                                      return const SizedBox(height: 8);
+                                    },
+                              );
+                            } else {
+                              return const Text('Error al cargar la lista');
+                            }
                           },
                         ),
                       ),
