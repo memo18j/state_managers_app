@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:state_managers_app/config/providers/cat_provider.dart';
+import 'package:state_managers_app/config/providers/shopping_list_provider.dart';
+import 'package:state_managers_app/config/routes/app_routes.dart';
 import 'package:weinds/weinds.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends ConsumerWidget {
   const HomePage({super.key});
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     TextEditingController myController = TextEditingController();
+    final catProvider = ref.watch(myCatProvider);
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -62,14 +67,18 @@ class HomePage extends StatelessWidget {
                       child: Row(
                         children: [
                           WeinDsAssetImage(
-                            path: 'assets/images/cat-eat.png',
+                            path: catProvider.currentImageCat,
                             widthImage: 180,
                           ),
                           Expanded(
                             child: MaterialButton(
                               minWidth: 100,
                               height: 50,
-                              onPressed: () {},
+                              onPressed: () {
+                                Navigator.of(
+                                  context,
+                                ).pushNamed(AppRoutes.stateCat);
+                              },
                               color: WeinDsColorsFoundation
                                   .colorButtonSecondary, // Transparent background for secondary button
                               shape: RoundedRectangleBorder(
@@ -86,7 +95,7 @@ class HomePage extends StatelessWidget {
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
                                     const Text('el gato esta'),
-                                    Text('comiendo'),
+                                    Text(catProvider.currentAction),
                                   ],
                                 ),
                               ),
@@ -163,7 +172,13 @@ class HomePage extends StatelessWidget {
                         minWidth: 100,
                         height: 50,
                         onPressed: () {
-                          if (myController.text.isNotEmpty) {}
+                          if (myController.text.isNotEmpty) {
+                            ref
+                                .read(myShoppingListProvider.notifier)
+                                .addItem(myController.text);
+                            myController
+                                .clear(); // Clear the text field after adding
+                          }
                         },
                         color: WeinDsColorsFoundation
                             .colorButtonPrimary, // Transparent background for secondary button
@@ -184,25 +199,39 @@ class HomePage extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       SizedBox(
-                        height: 100,
-                        child: ListView.separated(
-                          itemCount: 0,
-                          itemBuilder: (context, index) {
-                            return Container(
-                              decoration: const BoxDecoration(
-                                color: WeinDsColors.scale01,
-                              ),
-                              child: ListTile(
-                                title: Text('title'),
-                                trailing: IconButton(
-                                  icon: Icon(Icons.delete),
-                                  onPressed: () {},
-                                ),
-                              ),
+                        height: 300,
+                        child: Consumer(
+                          builder: (context, ref, child) {
+                            final List<String> shoppingList = ref.watch(
+                              myShoppingListProvider,
                             );
-                          },
-                          separatorBuilder: (BuildContext context, int index) {
-                            return const SizedBox(height: 8);
+                            return ListView.separated(
+                              itemCount: shoppingList.length,
+                              itemBuilder: (context, index) {
+                                return Container(
+                                  decoration: const BoxDecoration(
+                                    color: WeinDsColors.scale01,
+                                  ),
+                                  child: ListTile(
+                                    title: Text(shoppingList[index]),
+                                    trailing: IconButton(
+                                      icon: Icon(Icons.delete),
+                                      onPressed: () {
+                                        ref
+                                            .read(
+                                              myShoppingListProvider.notifier,
+                                            )
+                                            .removeItem(index);
+                                      },
+                                    ),
+                                  ),
+                                );
+                              },
+                              separatorBuilder:
+                                  (BuildContext context, int index) {
+                                    return const SizedBox(height: 8);
+                                  },
+                            );
                           },
                         ),
                       ),
